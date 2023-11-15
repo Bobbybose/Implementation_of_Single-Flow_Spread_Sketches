@@ -1,6 +1,5 @@
 import sys
 import random
-import math
 
 def main():
 
@@ -46,66 +45,90 @@ def main():
         print("True flow spread: " + str(flow_spreads[index]) + "      Estimated flow spread: " + str(estimated_flow_spreads[index]))
 
 
-# Inputs: Flow to record, bitmap to record flow in
+# Inputs: Flow to record, registers to record in
 # Returns: None
-# Description: Hashes and records all elements of a flow into the given bitmap
+# Description: Hashes and records the geometric hash + 1 of all elements of a flow into the given registers
 def record_flow(flow, registers):
     # Hashing and recording each element of flow
     for element in flow:
-        hash_value = hash_function(element, len(registers))
-        g = geometric_hash(hash_value)
+        # Finding the geometric hash (G) of a hashed value using current element
+        g = geometric_hash(hash_function(element, 4, len(registers)))
+        # Want G' = G + 1 for recording
         g_prime = g+1
-
-        if registers[hash_value] < g_prime:
-            registers[hash_value] = g_prime
-
-        #print(hash_value)
-        #print(g_prime)
+                
+        # Hashing element to a register using a different hash function
+        hash_value = hash_function(element, 6, len(registers))
+        # Updating register with new g_prime if it's larger
+        registers[hash_value] = max(registers[hash_value], g_prime)
 # record_flows()
 
 
-# Inputs: Bitmap to estimate flow spread in
+# Inputs: Registers to estimate flow spread in
 # Returns: Estimated flow spread
-# Description: Estimate spread of a flow in a bitmap using formula -mln(v), where u = number of 0s in bitmap and v = u/(bitmap length)
+# Description: Estimate spread of a flow in the registers using the formula for HLL Sketch querying
 def estimate_flow_spread(registers):
-    
     estimated_flow_spread = 0
-    
+
+    # Constants
     m = len(registers)
-    alpha = 0.7213/(1+1.079/m)
+    alpha = 0.7213/(1 + 1.079/m)
 
-    for index in range(m):
-        estimated_flow_spread += 1/(2**registers[index])
-
+    # Calculating estimated flow using formula for HLL Sketch querying
+    for register_value in registers:
+        estimated_flow_spread += 1/(2 ** register_value)
     estimated_flow_spread = estimated_flow_spread ** -1
     estimated_flow_spread = estimated_flow_spread * (m ** 2) * alpha
 
+    # Returning the estimated flow spread
     return estimated_flow_spread
 # estimate_flow_spread()
 
-# Inputs: Id of element to hash, size of bitmap in bits
-# Returns: Bitmap bit position where element encodes to
-# Description: Folding hash function implementation based from https://www.herevego.com/hashing-python/
-#   Split number into two (first four digits, and then rest of number)
-#   Add two parts and then do num % num_table_entries
-def hash_function(element_id, register_size):
-    # Error if id isn't more than four digits long; correcting here
-    if element_id < 10000:
-            element_id += 10000
 
-    # Hashing into a bitmap position
-    split_id_sum = int(str(element_id)[:4]) + int(str(element_id)[4:])
-    return split_id_sum % register_size
+# Inputs: Id of flow to hash, what size parts to split id into, number of registers
+# Returns: Hash value result of element id
+# Description: Folding hash function implementation based from https://www.herevego.com/hashing-python/
+#   Split id into a number of parts based on given step size and then add them together
+#   Hash function changes depending on step size
+def hash_function(element_id, step_size, num_registers):
+    # If id is too short than error will occur; fixing here
+    if element_id < 10**(step_size):
+        element_id += 10**(step_size)
+
+    # Pointer to current position of number
+    int_pos = 0
+    # Total sum of the split id
+    split_id_sum = 0
+    # Creating parts until there's no number left
+    while int_pos < len(str(element_id)):
+        # Making sure index isn't out of bounds
+        if int_pos + step_size < len(str(element_id)):
+            split_id_part = str(element_id)[int_pos:int_pos + step_size]
+        else:
+            split_id_part = str(element_id)[int_pos:]
+        
+        # Incrementing number position pointer
+        int_pos = int_pos + step_size
+        split_id_sum += int(split_id_part)
+
+    # Returning hashed position
+    return split_id_sum % num_registers
 # hash_function()
 
 
+# Inputs: Hashed element id
+# Returns: Geometric hash of input
+# Description: Calculates the geometric hash of the input value by calculating how many leading 0s are in the binary form of the number
+#              Maximum number of bits is 8 for m = 256
 def geometric_hash(id):
-    g = 0
+    # Obtaining binary form of input and removing prefix
     binary_form = bin(id)[2:]
-    #print(binary_form)
-
-    g += 8 - len(binary_form)
-
+    
+    # Calculating how many leading 0s are present
+    g = 8 - len(binary_form)
+    
+    #Returning geometric hash value
     return g
+# geometric_hash()
+
 
 main()

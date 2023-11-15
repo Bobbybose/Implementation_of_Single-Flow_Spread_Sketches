@@ -53,8 +53,9 @@ def main():
 def record_flow(flow, bitmap, sampling_probability):
     # Hashing and recording each element of flow
     for element in flow:
-        if hash_function2(element, len(bitmap)) < len(bitmap)*sampling_probability:
-             bitmap[hash_function(element, len(bitmap))] = 1
+        # If the hash value falls under the set probability, hash to an entry
+        if hash_function(element, 4, len(bitmap)) < len(bitmap)*sampling_probability:
+             bitmap[hash_function(element, 6, len(bitmap))] = 1
 # record_flows()
 
 
@@ -62,46 +63,45 @@ def record_flow(flow, bitmap, sampling_probability):
 # Returns: Estimated flow spread
 # Description: Estimate spread of a flow in a bitmap using formula -mln(v), where u = number of 0s in bitmap and v = u/(bitmap length)
 def estimate_flow_spread(bitmap, sampling_probability):
-     # u = number of 0s in bitmap
-     u = bitmap.count(0)
-     # v = percentage of 0s in bitmap
-     v = u/len(bitmap)
-     # Potentially correcting v to estimate bounds to prevent error
-     if v == 0:
-         v = 1/len(bitmap)
+    # u = number of 0s in bitmap
+    u = bitmap.count(0)
+    # v = percentage of 0s in bitmap
+    v = u/len(bitmap)
+    # Potentially correcting v to estimate bounds to prevent error
+    if v == 0:
+        v = 1/len(bitmap)
 
-     return -(len(bitmap)/sampling_probability)*math.log2(v)
+    return -(len(bitmap)/sampling_probability)*math.log2(v)
 # estimate_flow_spread()
 
 
-# Inputs: Id of element to hash, size of bitmap in bits
-# Returns: Bitmap bit position where element encodes to
+# Inputs: Id of flow to hash, what size parts to split id into, bitmap size
+# Returns: Index in bitmap where element should be recorded to
 # Description: Folding hash function implementation based from https://www.herevego.com/hashing-python/
-#   Split number into two (first four digits, and then rest of number)
-#   Add two parts and then do num % num_table_entries
-def hash_function(element_id, bitmap_size):
-    # Error if id isn't more than four digits long; correcting here
-    if element_id < 10000:
-            element_id += 10000
+#   Split id into a number of parts based on given step size and then add them together
+#   Hash function changes depending on step size
+def hash_function(element_id, step_size, bitmap_size):
+    # If id is too short than error will occur; fixing here
+    if element_id < 10**(step_size):
+        element_id += 10**(step_size)
 
-    # Hashing into a bitmap position
-    split_id_sum = int(str(element_id)[:4]) + int(str(element_id)[4:])
-    return split_id_sum % bitmap_size
-# hash_function()
+    # Pointer to current position of number
+    int_pos = 0
+    # Total sum of the split id
+    split_id_sum = 0
+    # Creating parts until there's no number left
+    while int_pos < len(str(element_id)):
+        # Making sure index isn't out of bounds
+        if int_pos + step_size < len(str(element_id)):
+            split_id_part = str(element_id)[int_pos:int_pos + step_size]
+        else:
+            split_id_part = str(element_id)[int_pos:]
+        
+        # Incrementing number position pointer
+        int_pos = int_pos + step_size
+        split_id_sum += int(split_id_part)
 
-
-# Inputs: Id of element to hash, size of bitmap in bits
-# Returns: Bitmap bit position where element encodes to
-# Description: Folding hash function implementation based from https://www.herevego.com/hashing-python/
-#   Split number into three (first four digits, second four digits, and then rest of number)
-#   Add three parts and then do num % num_table_entries
-def hash_function2(element_id, bitmap_size):
-    # Error if id isn't more than four digits long; correcting here
-    if element_id < 100000000:
-            element_id += 100000000
-
-    # Hashing into a bitmap position
-    split_id_sum = int(str(element_id)[:4]) + int(str(element_id)[4:8]) + int(str(element_id)[8:])
+    # Returning hashed position
     return split_id_sum % bitmap_size
 # hash_function()
 

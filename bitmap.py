@@ -60,15 +60,17 @@ def record_flow(flow, bitmap):
 # Returns: Estimated flow spread
 # Description: Estimate spread of a flow in a bitmap using formula -mln(v), where u = number of 0s in bitmap and v = u/(bitmap length)
 def estimate_flow_spread(bitmap):
-     # u = number of 0s in bitmap
-     u = bitmap.count(0)
-     # v = percentage of 0s in bitmap
-     v = u/len(bitmap)
-     # Potentially correcting v to estimate bounds to prevent error
-     if v == 0:
-         v = 1/len(bitmap)
-
-     return -len(bitmap)*math.log2(v)
+    # u = number of 0s in bitmap
+    u = bitmap.count(0)
+    
+    # v = percentage of 0s in bitmap
+    v = u/len(bitmap)
+    
+    # Potentially correcting v to estimate bounds to prevent error
+    if v == 0:
+        v = 1/len(bitmap)
+    
+    return -len(bitmap)*math.log2(v)
 # estimate_flow_spread()
 
 
