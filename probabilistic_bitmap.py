@@ -71,7 +71,7 @@ def estimate_flow_spread(bitmap, sampling_probability):
     if v == 0:
         v = 1/len(bitmap)
 
-    return -(len(bitmap)/sampling_probability)*math.log2(v)
+    return -(len(bitmap)/sampling_probability)*math.log(v)
 # estimate_flow_spread()
 
 

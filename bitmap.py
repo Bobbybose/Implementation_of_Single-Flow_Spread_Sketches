@@ -70,7 +70,7 @@ def estimate_flow_spread(bitmap):
     if v == 0:
         v = 1/len(bitmap)
     
-    return -len(bitmap)*math.log2(v)
+    return -len(bitmap)*math.log(v)
 # estimate_flow_spread()
 
 
